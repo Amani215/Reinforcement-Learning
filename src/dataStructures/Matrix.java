@@ -62,7 +62,7 @@ public class Matrix {
 		}
 	}
 	
-	public Matrix subtract(Matrix a, Matrix b) {
+	public static Matrix subtract(Matrix a, Matrix b) {
 		if(!a.matches(b))
 			return a;
 		
@@ -105,7 +105,7 @@ public class Matrix {
         return temp;
 	}
 	
-	public Matrix transpose(Matrix m) throws Exception {
+	public static Matrix transpose(Matrix m) throws Exception {
 		Matrix temp = new Matrix(m.columns,m.rows);
 		
 		for(int i=0;i<m.rows;i++)
@@ -118,7 +118,7 @@ public class Matrix {
         return temp;
 	}
 
-	//activation functon and its derivative
+	//activation function and its derivative
     public void leakyReLU(double alpha) {
     	for(int i=0; i<rows; i++) {
     		for(int j=0; j<columns; j++) {
