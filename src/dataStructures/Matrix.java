@@ -17,7 +17,7 @@ public class Matrix {
 		{
 			for(int j=0; j<columns; j++)
 			{
-				data[i][j] = 0;
+				data[i][j] = 1;
 			}
 		}
 	}
