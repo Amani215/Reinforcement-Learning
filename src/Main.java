@@ -43,10 +43,15 @@ public class Main {
 		
 		neuralNetwork.train(samples, sampleTargets);
 		
+		double sum=0;
 		for(int j=0; j<testSamples.length;j++) {
 			output = neuralNetwork.forwardPass(testSamples[j]);
-			//System.out.println(output.get(0));
+			sum+= Math.pow((output.get(0)-testSampleTargets[j][0]), 2);
+			System.out.print(output.get(0)+"\n");
 		}
+		
+		//System.out.println();
+		//System.out.println(Math.sqrt(sum/testSamples.length));
 	}
 
 }

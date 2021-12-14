@@ -87,13 +87,11 @@ public class NeuralNetwork {
 	
 	public void train(double[][] input, double[][] target)
 	{
-		for(int i=0; i<input.length; i++)
+		for(int i=0; i<1; i++)
 			this.backPropagate(input[i], target[i]);
 	}
 	
 	private Matrix computeHiddenValues(Matrix inputMatrix){
-		weights_ih.print();
-		System.out.println();
 		Matrix hidden = Matrix.multiplyWithDotProduct(weights_ih, inputMatrix);	//(2x3)(3x1)
         hidden.add(hiddenBiases);									
         hidden.leakyReLU(ALPHA);									
