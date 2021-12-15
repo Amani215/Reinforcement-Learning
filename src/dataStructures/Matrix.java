@@ -17,10 +17,14 @@ public class Matrix {
 		{
 			for(int j=0; j<columns; j++)
 			{
-				data[i][j] = 1;
+				data[i][j] = 0.1;
 			}
 		}
 	}
+	
+	public int getRows() { return rows;}
+	public int getColumns() { return columns;}
+	public double getValueAt(int row, int column) {return data[row][column];}
 	
 	public void print()
 	{
@@ -60,6 +64,22 @@ public class Matrix {
 			return temp;
 		}
 		
+	public void addArrayToRow(double[] values, int size, int position) {
+		if(size>columns) {
+			System.out.print("Size of array too big");
+			return;
+		}
+		
+		if(position>rows) {
+			System.out.println("Position exceeds Matrix limit");
+			return;
+		}
+		
+		for(int i=0; i<size; i++) {
+			data[position][i] = values[i];
+		}
+	}
+	
 	public void add(int a)
 	{
 		for(int i=0; i<rows; i++) {
@@ -143,6 +163,26 @@ public class Matrix {
 			}
 		}
 		
+	}
+	
+	public void power(int a) {
+		for(int i=0; i<rows; i++)
+		{
+			for(int j=0; j<columns; j++)
+			{
+				this.data[i][j] = Math.pow(data[i][j], a);
+			}
+		}
+	}
+	
+	public void sqrt() {
+		for(int i=0; i<rows; i++)
+		{
+			for(int j=0; j<columns; j++)
+			{
+				this.data[i][j] = Math.sqrt(data[i][j]);
+			}
+		}
 	}
 	
 	public static Matrix transpose(Matrix m) {

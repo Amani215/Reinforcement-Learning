@@ -6,105 +6,106 @@ import dataStructures.Matrix;
 
 public class NeuralNetwork {
 	private final double ALPHA = 0.1;	//for the leaky relu
-	private Matrix weights_ih, weights_ho, hiddenBiases, outputBiases;	
+	
+	private Matrix weights_ih, Z1, hiddenNodes, weights_ho, Z2, output;	
 	private double learningRate = 0.01;
 	
-	public NeuralNetwork(int numOfInputs,int numOfHiddenNodes,int numOfOutputs) {
-		weights_ih = new Matrix(numOfHiddenNodes, numOfInputs); //(2x3)
-		weights_ho = new Matrix(numOfOutputs, numOfHiddenNodes);//(1x2)
-		
-		hiddenBiases = new Matrix(numOfHiddenNodes, 1);
-		outputBiases = new Matrix(numOfOutputs, 1);
-		
+	public NeuralNetwork(int numOfSamples, int numOfFeatures, int numOfHiddenNodes) {
+		this.weights_ih = new Matrix(numOfFeatures, numOfHiddenNodes);	//81 x 10
+		this.Z1 = new Matrix(numOfSamples,numOfHiddenNodes);			//17011 x 10
+		this.hiddenNodes = new Matrix(numOfSamples,numOfHiddenNodes);	//17011 x 10
+		this.weights_ho = new Matrix(numOfHiddenNodes, 1);				//10 x 1
+		this.Z2 = new Matrix(numOfSamples,1);							//17011 x 1
+		this.output = new Matrix(numOfSamples,1);						//17011 x 1
 	}
 	
-	public List<Double> forwardPass(double[] input)
+	public List<Double> forwardPass(Matrix inputMatrix)
 	{
-		Matrix inputMatrix = Matrix.fromArray(input);
-		
-		Matrix hidden = computeHiddenValues(inputMatrix);
-		Matrix output = computeOutputValues(hidden);
+		hiddenNodes = computeHiddenValues(inputMatrix);
+		output = computeOutputValues(hiddenNodes);
 		
 		return output.toList();
 	}
 	
-	public void backPropagate(double [] input, double [] target)
+	public void backPropagate(Matrix inputMatrix, Matrix targetMatrix)
 	{
-		//Feedforward
-		Matrix inputMatrix = Matrix.fromArray(input);
+		forwardPass(inputMatrix);	//if removed make sure it's called before this function
 		
-		Matrix hidden = computeHiddenValues(inputMatrix);
-		Matrix output = computeOutputValues(hidden);
+		//RMSE error
+		Matrix difference = Matrix.subtract(targetMatrix, output);
+		double error = computeError(difference);
 		
-		Matrix targetMatrix = Matrix.fromArray(target);
+		//derivative of weighted sum of hidden values
+		Matrix Z2_derivative = Z2.dleakyReLU(ALPHA);
 		
-		//error derivative
-		Matrix derror = Matrix.subtract(output, targetMatrix); //-(target-output) (1x1)
-		
-		//output derivative
-		Matrix gradient_o = output.dleakyReLU(ALPHA); //(1x1)
-		
-		//delta
-		Matrix delta_o = derror;
-		delta_o.multiplyElementByElement(gradient_o); //delta = d(error).d(out) (1x1)
+		//delta_3
+		Matrix delta_3 = difference;
+		delta_3.multiplyElementByElement(Z2_derivative);
+		delta_3.multiply(1/(error*output.getRows()));
 		
 		//change in the weights is delta_o.out_h
-		Matrix hidden_T = Matrix.transpose(hidden); //(1X2)
-		Matrix who_change =  Matrix.multiplyWithDotProduct(delta_o, hidden_T); //(1x1)(1x2) = (1x2)
+		Matrix hiddenNodes_T = Matrix.transpose(hiddenNodes);
+		Matrix who_change =  Matrix.multiplyWithDotProduct(hiddenNodes_T, delta_3);
 		
-		//Calculating error for hidden nodes (taking into account all outputs)
-		Matrix who_T = Matrix.transpose(weights_ho); //(2x1)
-		Matrix hidden_derrors = Matrix.multiplyWithDotProduct(who_T, delta_o); //delta_o instead of d(error)? (2x1)(1x1) = (2x1)
 		
-		//derivative of the hidden nodes
-		Matrix gradient_h = hidden.dleakyReLU(ALPHA);
+		//derivative of weighted sum of inputs
+		Matrix Z1_derivative = Z1.dleakyReLU(ALPHA);
 		
-		//delta of hidden nodes
-		Matrix delta_h = hidden_derrors;
-		delta_h.multiplyElementByElement(gradient_h);
+		//Matrix temp
+		Matrix temp = weights_ih;
+		temp.multiplyElementByElement(Z1_derivative);
 		
-		//change in the weights is delta_h.i
-		Matrix i_T = Matrix.transpose(inputMatrix);
-		Matrix wih_change = Matrix.multiplyWithDotProduct(delta_h, i_T);
+		//delta_2
+		Matrix delta_2 = delta_3;
+		delta_2 = Matrix.multiplyWithDotProduct(delta_2, temp);
+		
+		//Change in the weights of the features
+		Matrix inputMatrix_T = Matrix.transpose(inputMatrix);
+		Matrix wih_change = Matrix.multiplyWithDotProduct(inputMatrix_T, delta_2);
 		
 		//update the weights (between the hidden layer and the output)
 		who_change.multiply(learningRate);
 		weights_ho.add(who_change);
 		
-		//update the biases of outputs
-		delta_o.multiply(learningRate);
-		outputBiases.add(delta_o);
-		
 		//update the weights (between the input and the hidden layer)
 		wih_change.multiply(learningRate);
 		weights_ih.add(wih_change);
-		
-		//update the biases of the hidden nodes
-		delta_h.multiply(learningRate);
-		hiddenBiases.add(gradient_h);
-		
 	}
 	
-	public void train(double[][] input, double[][] target)
+	public void train(Matrix inputMatrix, Matrix targetMatrix)
 	{
 		for(int i=0; i<1; i++)
-			this.backPropagate(input[i], target[i]);
+			this.backPropagate(inputMatrix, targetMatrix);
 	}
 	
 	private Matrix computeHiddenValues(Matrix inputMatrix){
-		Matrix hidden = Matrix.multiplyWithDotProduct(weights_ih, inputMatrix);	//(2x3)(3x1)
-        hidden.add(hiddenBiases);									
-        hidden.leakyReLU(ALPHA);									
+		this.Z1 = Matrix.multiplyWithDotProduct(inputMatrix, weights_ih);	//Z1 = (17011x81).(81x10)							
         
-        return hidden; //(2x1)
+		Matrix hidden = Z1;
+		hidden.leakyReLU(ALPHA); //H = f(Z1)									
+        
+        return hidden;	//17011 x 10
 	}
 	
 	private Matrix computeOutputValues(Matrix hidden){
-		Matrix output = Matrix.multiplyWithDotProduct(weights_ho,hidden);
-        output.add(outputBiases);								
-        output.leakyReLU(ALPHA);								
+		this.Z2 = Matrix.multiplyWithDotProduct(hidden,weights_ho);	//Z2 = (17011 x 10).(10 x 1)						
+		
+		Matrix output = Z2;
+		output.leakyReLU(ALPHA);	//O = f(Z2)							
         
-        return output;
+        return output;	//17011 x 1
+	}
+	
+	private double computeError(Matrix difference) {
+		Matrix errorMatrix = difference;
+		
+		errorMatrix.power(2);
+		double sum = 0;
+		for(int i=0; i<errorMatrix.getRows(); i++) {
+			sum += errorMatrix.getValueAt(i, 0);
+		}
+		
+		return Math.sqrt(sum/output.getRows());
 	}
 	
 }
